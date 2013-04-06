@@ -1,0 +1,19 @@
+{
+    "author": "Justin Warkentin <justin.warkentin@gmail.com>",
+    "name": "faster",
+
+    "version": "0.0.1",
+    "description": "Javascript performance booster",
+    "keywords": ["Javascript", "speed", "performance", "fast"],
+    "homepage": "https://github.com/jwarkentin/faster",
+    "bugs": "https://github.com/jwarkentin/faster/issues",
+    "main": "./dist/faster.min.js",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/jwarkentin/faster.git"
+    },
+    "devDependencies": {
+        "uglify-js": "*",
+        "semver": "*"
+    }
+}

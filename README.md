@@ -9,7 +9,7 @@ This does not exclude the possibility of implementing performant versions of com
 
 I would like to keep the core of Faster.js limited to functions that already exist in Javascript and keep all extra functions in separate libraries that can be optionally included. There will likely be an extra file included with this repo that includes a lot of useful common functions that people use.
 
-This goes really well with other libraries, like Underscore, that try to use native versions of functions where they're available.
+This goes really well with other libraries, like Underscore, that try to use native versions of functions where they're available. Underscore will try to use the native versions of functions and if Faster.js has defined those native versions then they will be called by everything, thus making things faster!
 
 Usage
 -----

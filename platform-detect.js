@@ -138,6 +138,14 @@
   }
 
 
+  if(typeof QUnit !== 'undefined') {
+    // Function for testing
+    getPlatform.getRef = function(name) {
+      return eval(name + ';');
+    };
+  }
+
+
   // Support AMD loaders
   if(typeof require !== 'undefined' && typeof define !== 'undefined') {
     define(function() {

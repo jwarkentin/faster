@@ -1,6 +1,107 @@
 ;(function() {
-  // Determine platform/version
-  var platform = getPlatform();
+  //////////////////////
+  // Helper Functions //
+  //////////////////////
+
+
+  function extend(toObj) {
+    var exObjs = Array.prototype.slice.call(arguments, 1);
+    for(var i = 0; i < exObjs.length; i++) {
+      var fromObj = exObjs[i];
+      for(var prop in fromObj) {
+        if(fromObj.hasOwnProperty(prop)) {
+          toObj[prop] = fromObj[prop];
+        }
+      }
+    }
+
+    return toObj;
+  }
+
+
+  // Helper for isEqual()
+  function getType(obj) {
+    var objType = typeof(obj);
+    if(objType != 'object') return objType;
+
+    if(obj instanceof Array) return 'array';
+    if(obj instanceof RegExp) return 'regexp';
+
+    return objType;
+  }
+
+  // Helper for isEqual()
+  function keys(obj) {
+    if(Object.keys) return Object.keys(obj);
+
+    var objKeys = [];
+    for(var prop in obj) {
+      if(obj.hasOwnProperty(prop)) {
+        objKeys.push(prop);
+      }
+    }
+
+    return objKeys;
+  }
+
+  function isEqual(item1, item2, deep) {
+    if(item1 == item2) return true;
+
+    // Type check
+    var type1 = getType(item1);
+    var type2 = getType(item2);
+    if(type1 != type2) return false;
+
+    if(type1 == 'array') {
+      if(item1.length != item2.length) return false;
+
+      for(var i = 0; i < item1.length; i++) {
+        if(deep) {
+          if(!isEqual(item1[i], item2[i], true)) {
+            return false;
+          }
+        } else {
+          if(item1[i] != item2[i]) return false;
+        }
+      }
+
+      return true;
+    } else if(type1 == 'object') {
+      var o1Keys = keys(item1);
+      var o2Keys = keys(item2);
+
+      if(!isEqual(o1Keys, o2Keys)) return false;
+
+      for(var i = 0; i < o1Keys.length; i++) {
+        if(deep) {
+          if(!isEqual(item1[o1Keys[i]], item2[o1Keys[i]], deep)) {
+            return false;
+          }
+        } else {
+          if(item1[o1Keys[i]] != item2[o1Keys[i]]) return false;
+        }
+      }
+
+      return true;
+    } else if(type1 == 'regexp') {
+      return item1.toString() == item2.toString();
+    }
+
+    return false;
+  }
+
+  function stringifyMap(map) {
+    var newMap = {};
+
+    for(var prop in map) {
+      if(map.hasOwnProperty(prop)) {
+        if(map[prop] instanceof Function) newMap[prop] = map[prop].toString();
+        else newMap[prop] = map[prop];
+      }
+    }
+
+    return JSON.stringify(newMap);
+  }
 
   // Given any version number with 1-3 potentially decimal separated digital (plus and before and after stuff)
   // this will try to make it valid semver (e.g. 17 -> 17.0.0, 1.2+build -> 1.2.0+build, also 17+ -> >=17).
@@ -24,7 +125,20 @@
     return prefix + verparts.slice(2, 5).join('.') + verparts[5];
   }
 
+
+  ///////////////////
+  // FasterJS Code //
+  ///////////////////
+
+  var fjsCacheKey = 'fjs';
+
+  // Determine platform/version
+  var platform = getPlatform();
+
   var fasterJS = {
+    // Used to know when to clear the cache
+    //version
+
     getPlatform: function(alias) {
       alias = alias.toLowerCase();
 
@@ -56,13 +170,89 @@
       return alias;
     },
 
-    select: function select(obj) {
+    clearCache: function() {
+      if(typeof(localStorage) !== 'undefined') {
+        for(var key in localStorage) {
+          if(key.substr(0, fjsCacheKey.length + 1) == fjsCacheKey + ':') {
+            delete localStorage[key];
+          }
+        }
+      }
+    },
+
+    cacheMapKey: function(obj, mapKey) {
+      if(typeof(localStorage) !== 'undefined') {
+        var cacheKey = fjsCacheKey + ':' + obj.name;
+        delete localStorage[cacheKey];
+
+        var cacheObj = {mapKey: mapKey};
+        if(typeof(fjsDev) !== 'undefined' && fjsDev) {
+          cacheObj.map = stringifyMap(obj.map);
+          cacheObj.fnSource = obj[mapKey].toString();
+        }
+
+        localStorage[fjsCacheKey + ':' + obj.name] = JSON.stringify(cacheObj);
+      }
+
+      return obj[mapKey];
+    },
+
+    getObjCache: function(obj) {
+      if(typeof localStorage !== 'undefined') {
+        var cacheKey = fjsCacheKey + ':' + obj.name;
+        var cachedMap = localStorage[cacheKey];
+
+        if(cachedMap) {
+          cachedMap = JSON.parse(cachedMap);
+          if(typeof(fjsDev) !== 'undefined' && fjsDev) {
+            // If the map or the function source for the selected mapKey has changed, refresh the cache
+            var objMap = stringifyMap(obj.map);
+            if(!isEqual(cachedMap.map, objMap, true) || cachedMap.fnSource != obj[cachedMap.mapKey].toString()) {
+              delete localStorage[cacheKey];
+              return false;
+            }
+          }
+
+          return obj[cachedMap.mapKey] || false;
+        }
+      }
+
+      return false;
+    },
+
+    /**
+     * This is where all the magic happens. Given a FasterJS module object it will return the fastest version of the function
+     * for the current platform. It uses the map normally, unless 'test' is true. It caches the decision in localStorage if
+     * the current platform supports it to make future page loads quicker.
+     *
+     * @param  {object} obj The function map object
+     *
+     * @return {function}   The fastest version of the function for the current platform
+     */
+    select: function select(obj, options) {
       if(!obj.name) {
         throw new Error("Won't select from an object without a name - it is helpful for debugging");
       }
       if(!obj.map || !Object.keys(obj.map).length) {
         throw new Error("Failed to select a function for '" + obj.name + "': No map found");
       }
+
+      // Default options
+      options = extend({
+        platform: platform,   // By default select based on the current platform as determined by platform-detect.
+                              // This is mostly only useful for unit testing.
+        test: false,          // Test for the fastest version instead of using the defined map
+        forceTest: false,     // If 'test' is true, but we have cached a function mapKey for the given map object,
+                              // we will return the cached version if the actual function code hasn't changed unless
+                              // this is true.
+        updateMap: true       // When 'test' is true, should we automatically update the map
+      }, options || {});
+
+
+      // Check cache first
+      var cachedResult = fasterJS.getObjCache(obj);
+      if(cachedResult) return cachedResult;
+
 
       // Always search the map in a predictable way
       var mapKeys = Object.keys(obj.map).sort();
@@ -72,7 +262,7 @@
 
         var mapKey = mapKeys[i];
         if(obj[mapKey] instanceof Function) {
-          fallback = obj[mapKey];
+          fallback = mapKey;
 
           // The map key's definition can be a string or an array of strings to match the platform against
           var mapKeyDef = obj.map[mapKey];
@@ -90,14 +280,14 @@
 
             // If there is no version given in the definition then we match all versions, so we're done
             if(!defparts[1]) {
-              return obj[mapKey];
+              return fasterJS.cacheMapKey(obj, mapKey);
             }
 
             // Every platform should have a version compare function defined in the platformComparators. We will
             // operate under this assumption for now.
             var versionCompareFunc = fasterJS.versionComparators[fasterJS.versionComparators[defPlatform] ? defPlatform : 'default'];
             if(versionCompareFunc(platform.version, defparts[1])) {
-              return obj[mapKey];
+              return fasterJS.cacheMapKey(obj, mapKey);
             }
           }
 
@@ -110,7 +300,9 @@
       }
 
       // If we've made it this far then no map definitions matched. Look for a default, otherwise pick the first we find.
-      return obj.map['default'] ? obj[obj.map['default']] : fallback;
+      var defaultMapKey = obj.map['default'] ? obj.map['default'] : fallback;
+      if(defaultMapKey instanceof Function) defaultMapKey = defaultMapKey();
+      return fasterJS.cacheMapKey(obj, defaultMapKey);
     },
 
     // Abbreviations and aliases
@@ -148,7 +340,11 @@
     // The current platform is not supported - we'll just ignore the error and let everything select defaults
   }
 
-  //code
+  // Clear the cache if the version number has changed
+  if(typeof(localStorage) !== 'undefined' && localStorage[fjsCacheKey + ':version'] != fasterJS.version) {
+    fasterJS.clearCache();
+    localStorage[fjsCacheKey + ':version'] = fasterJS.version;
+  }
 
   // Support AMD loaders
   if(typeof require !== 'undefined' && typeof define !== 'undefined') {
@@ -159,6 +355,8 @@
     if(!module) module = {};
     exports = module.exports = fasterJS;
   } else {
-    window.fasterJS = fasterJS;
+    window.fasterJS = window.fjs = fasterJS;
   }
 })();
+
+//code

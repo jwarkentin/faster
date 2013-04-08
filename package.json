@@ -13,6 +13,7 @@
         "url": "https://github.com/jwarkentin/faster.git"
     },
     "devDependencies": {
+        "execSync": "*",
         "uglify-js": "*",
         "semver": "*"
     }

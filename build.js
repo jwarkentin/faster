@@ -14,20 +14,24 @@ jsFiles.forEach(function(filename) {
 var writeFiles = [
   fs.readFileSync(__dirname + '/node_modules/semver/semver.js').toString(),
   fs.readFileSync(__dirname + '/platform-detect.js').toString(),
-  fs.readFileSync(__dirname + '/wrapper.js').toString()
+  fs.readFileSync(__dirname + '/faster.js').toString()
     .replace('\/\/version', "version: '" + pkgConfig.version + "',")
-    .replace('\/\/code', sources.join('\n'))
 ];
 
 console.log('Building faster.js ...');
-fs.writeFileSync(__dirname + '/dist/faster.js', writeFiles.join('\n\n'));
+var compiledFaster = writeFiles.join('\n\n');
+fs.writeFileSync(__dirname + '/dist/faster.js', compiledFaster + sources.join('\n'));
 process.stdout.write(execSync.stdout(__dirname + '/node_modules/uglify-js/bin/uglifyjs ' + __dirname + '/dist/faster.js -b --comments=all -o ' + __dirname + '/dist/faster.js'));
 
 console.log('Building faster.min.js ...');
 process.stdout.write(execSync.stdout(__dirname + '/node_modules/uglify-js/bin/uglifyjs ' + __dirname + '/dist/faster.js -o ' + __dirname + '/dist/faster.min.js'));
 
-// Build dev version -- not used for development on FasterJS, but for development on FasterJS function maps
-console.log('Building faster.dev.js...');
+
+console.log('Writing faster.test.js');
+fs.writeFileSync(__dirname + '/dist/faster.test.js', compiledFaster);
+
+// Write dev version -- not used for development on FasterJS, but for development on FasterJS function maps
+console.log('Writing faster.dev.js...');
 fs.writeFileSync(__dirname + '/dist/faster.dev.js', ';var fjsDev = true;' + fs.readFileSync(__dirname + '/dist/faster.min.js'));
 
 console.log('All files built in ' + __dirname + '/dist');

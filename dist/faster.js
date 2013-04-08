@@ -371,6 +371,7 @@
         }
         return platform;
     }
+    // Only used for unit tests to allow access to otherwise private parts of the library
     if (typeof QUnit !== "undefined") {
         // Function for testing
         getPlatform.getRef = function(name) {
@@ -491,14 +492,14 @@
         return prefix + verparts.slice(2, 5).join(".") + verparts[5];
     }
     ///////////////////
-    // FasterJS Code //
+    // Faster.js Code //
     ///////////////////
     var fjsCacheKey = "fjs";
     // Determine platform/version
     var platform = getPlatform();
     var fasterJS = {
         // Used to know when to clear the cache
-        version: "0.0.1",
+        //version
         getPlatform: function(alias) {
             alias = alias.toLowerCase();
             // Match the platform
@@ -568,7 +569,7 @@
             return false;
         },
         /**
-     * This is where all the magic happens. Given a FasterJS module object it will return the fastest version of the function
+     * This is where all the magic happens. Given a Faster.js module object it will return the fastest version of the function
      * for the current platform. It uses the map normally, unless 'test' is true. It caches the decision in localStorage if
      * the current platform supports it to make future page loads quicker.
      *
@@ -599,7 +600,6 @@
             // Check cache first
             var cachedResult = fasterJS.getObjCache(obj);
             if (cachedResult) return cachedResult;
-            console.log("called");
             // Always search the map in a predictable way
             var mapKeys = Object.keys(obj.map).sort();
             var fallback;
@@ -671,6 +671,13 @@
     if (typeof localStorage !== "undefined" && localStorage[fjsCacheKey + ":version"] != fasterJS.version) {
         fasterJS.clearCache();
         localStorage[fjsCacheKey + ":version"] = fasterJS.version;
+    }
+    // Only used for unit tests to allow access to otherwise private parts of the library
+    if (typeof QUnit !== "undefined") {
+        // Function for testing
+        getPlatform.getRef = function(name) {
+            return eval(name + ";");
+        };
     }
     // Support AMD loaders
     if (typeof require !== "undefined" && typeof define !== "undefined") {

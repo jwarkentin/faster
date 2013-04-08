@@ -138,6 +138,7 @@
   }
 
 
+  // Only used for unit tests to allow access to otherwise private parts of the library
   if(typeof QUnit !== 'undefined') {
     // Function for testing
     getPlatform.getRef = function(name) {

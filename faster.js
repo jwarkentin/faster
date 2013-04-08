@@ -1,3 +1,15 @@
+/**
+ * Faster.js Javascript performance library v//version
+ *
+ * Author: Justin Warkentin
+ * License: MIT License
+ *
+ * Copyright 2013 Justin Warkentin
+ *
+ * This file is the main Faster.js build file. It should not be included directly. The final faster.js file
+ * in the 'dist' directory is modified and extended by the build script.
+ */
+
 ;(function() {
   //////////////////////
   // Helper Functions //
@@ -127,7 +139,7 @@
 
 
   ///////////////////
-  // FasterJS Code //
+  // Faster.js Code //
   ///////////////////
 
   var fjsCacheKey = 'fjs';
@@ -221,7 +233,7 @@
     },
 
     /**
-     * This is where all the magic happens. Given a FasterJS module object it will return the fastest version of the function
+     * This is where all the magic happens. Given a Faster.js module object it will return the fastest version of the function
      * for the current platform. It uses the map normally, unless 'test' is true. It caches the decision in localStorage if
      * the current platform supports it to make future page loads quicker.
      *
@@ -346,6 +358,16 @@
     localStorage[fjsCacheKey + ':version'] = fasterJS.version;
   }
 
+
+  // Only used for unit tests to allow access to otherwise private parts of the library
+  if(typeof QUnit !== 'undefined') {
+    // Function for testing
+    getPlatform.getRef = function(name) {
+      return eval(name + ';');
+    };
+  }
+
+
   // Support AMD loaders
   if(typeof require !== 'undefined' && typeof define !== 'undefined') {
     define(function() {
@@ -358,5 +380,3 @@
     window.fasterJS = window.fjs = fasterJS;
   }
 })();
-
-//code

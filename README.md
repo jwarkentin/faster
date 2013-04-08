@@ -32,3 +32,5 @@ Contribute
 ----------
 
 Maintaining the browser and version to function mappings is a monumental task and any help is appreciated.
+
+# License: [MIT License](LICENSE)

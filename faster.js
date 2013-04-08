@@ -1,16 +1,23 @@
 /**
- * Faster.js Javascript performance library v//version
+ * Faster.js Javascript performance library v//@version
  *
  * Author: Justin Warkentin
  * License: MIT License
  *
  * Copyright 2013 Justin Warkentin
  *
+ * @preserve
+ */
+
+/**
  * This file is the main Faster.js build file. It should not be included directly. The final faster.js file
  * in the 'dist' directory is modified and extended by the build script.
  */
 
 ;(function() {
+  //@platform-detect
+  //@semver
+
   //////////////////////
   // Helper Functions //
   //////////////////////
@@ -149,7 +156,7 @@
 
   var fasterJS = {
     // Used to know when to clear the cache
-    //version
+    version: '//@version',
 
     getPlatform: function(alias) {
       alias = alias.toLowerCase();

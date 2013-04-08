@@ -12,10 +12,10 @@ jsFiles.forEach(function(filename) {
 });
 
 var writeFiles = [
-  fs.readFileSync(__dirname + '/node_modules/semver/semver.js').toString(),
-  fs.readFileSync(__dirname + '/platform-detect.js').toString(),
   fs.readFileSync(__dirname + '/faster.js').toString()
-    .replace('\/\/version', "version: '" + pkgConfig.version + "',")
+    .replace(/\/\/@version/g, pkgConfig.version)
+    .replace('\/\/@platform-detect', fs.readFileSync(__dirname + '/platform-detect.js').toString())
+    .replace('\/\/@semver', fs.readFileSync(__dirname + '/node_modules/semver/semver.js').toString())
 ];
 
 console.log('Building faster.js ...');
@@ -24,7 +24,7 @@ fs.writeFileSync(__dirname + '/dist/faster.js', compiledFaster + sources.join('\
 process.stdout.write(execSync.stdout(__dirname + '/node_modules/uglify-js/bin/uglifyjs ' + __dirname + '/dist/faster.js -b --comments=all -o ' + __dirname + '/dist/faster.js'));
 
 console.log('Building faster.min.js ...');
-process.stdout.write(execSync.stdout(__dirname + '/node_modules/uglify-js/bin/uglifyjs ' + __dirname + '/dist/faster.js -o ' + __dirname + '/dist/faster.min.js'));
+process.stdout.write(execSync.stdout(__dirname + '/node_modules/uglify-js/bin/uglifyjs ' + __dirname + '/dist/faster.js --comments -o ' + __dirname + '/dist/faster.min.js'));
 
 
 console.log('Writing faster.test.js');
